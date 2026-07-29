@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="refresh" content="300">
+    <title>Watchlist Dinámica - Texto Plano</title>
+    <style>
+        body {
+            font-family: 'JetBrains Mono', 'Fira Code', monospace;
+            white-space: pre-wrap;
+            background-color: #0a0a0a;
+            color: #e0e0e0;
+            padding: 0 30px 30px;
+            font-size: 12px;
+            line-height: 1.6;
+            margin: 0;
+            overflow-x: auto;
+        }
+        .pos { color: #00ff88; font-weight: bold; }
+        .neg { color: #ff4444; font-weight: bold; }
+        #monitor {
+            background: #111;
+            padding: 20px;
+            border-radius: 8px;
+            border: 1px solid #333;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+            display: inline-block;
+            min-width: fit-content;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="monitor">Cargando datos...</div>
+
+    <script>
+        let lastOutput = "";
+
+        async function traerDolarBlue() {
+            try {
+                const res = await fetch('https://dolarapi.com/v1/dolares/blue');
+                const data = await res.json();
+                return `Dólar Blue: Compra $${Math.round(data.compra)} - Venta $${Math.round(data.venta)}`;
+            } catch (e) { return "Dólar Blue: Error"; }
+        }
+
+        async function traerCriptoDatos() {
+            try {
+                const res = await fetch('https://api.coingecko.com/api/v3/global');
+                const json = await res.json();
+                const d = json.data.market_cap_percentage;
+                const btcDom = d.btc;
+                const ethDom = d.eth;
+                const altsDom = 100 - btcDom - ethDom;
+
+                let altIndex = Math.round(100 - ((btcDom - 35) * 3.33));
+                if (altIndex > 100) altIndex = 100; if (altIndex < 0) altIndex = 0;
+                let l = altIndex >= 75 ? "Altcoin Season" : (altIndex <= 35 ? "Bitcoin Season" : "Neutral");
+
+                return {
+                    dominance: `Dominancia: BTC ${btcDom.toFixed(1)}% - ETH ${ethDom.toFixed(1)}% - ALTS ${altsDom.toFixed(1)}%`,
+                    altcoinSeason: `Altcoin Index: ${altIndex} (${l})`
+                };
+            } catch (e) { return { dominance: "Dominancia: Error", altcoinSeason: "Altcoin Index: Error" }; }
+        }
+
+        async function traerFearGreedBitcoin() {
+            try {
+                const res = await fetch('https://api.alternative.me/fng/?limit=1');
+                const data = await res.json();
+                const val = data.data[0].value;
+                const label = data.data[0].value_classification;
+                return `Fear & Greed: ${val} (${label})`;
+            } catch (e) { return "Fear & Greed: Error"; }
+        }
+
+        async function fetchWatchlist() {
+            try {
+                const [dolar, cripto, fg] = await Promise.all([
+                    traerDolarBlue(),
+                    traerCriptoDatos(),
+                    traerFearGreedBitcoin()
+                ]);
+
+                let output = "";
+                output += dolar + "\n";
+                output += cripto.dominance + "\n";
+                output += cripto.altcoinSeason + "\n";
+                output += fg + "\n";
+
+                lastOutput = output;
+                renderContent();
+
+            } catch (e) {
+                lastOutput = "Error al cargar los datos.\nPuede deberse a límites de la API, intente en un momento.";
+                renderContent();
+                console.error(e);
+            }
+        }
+
+        let timeLeft = 300; // 5 minutos en segundos
+
+        function formatTime(seconds) {
+            const mins = Math.floor(seconds / 60);
+            const secs = seconds % 60;
+            return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+        }
+
+        function renderContent() {
+            if (lastOutput) {
+                if (lastOutput.startsWith("Error")) {
+                    document.getElementById('monitor').innerHTML = lastOutput;
+                } else {
+                    document.getElementById('monitor').innerHTML = lastOutput.trimEnd() + `\nRefresco en: ${formatTime(timeLeft)}`;
+                }
+            }
+        }
+
+        // Carga inicial
+        fetchWatchlist();
+
+        // Actualizar el contador y refrescar al llegar a 0
+        setInterval(() => {
+            timeLeft--;
+            if (timeLeft <= 0) {
+                location.reload();
+            } else {
+                renderContent();
+            }
+        }, 1000);
+    </script>
+</body>
+
+</html>
