@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="refresh" content="1800">
+    <title>Monitor de Canales</title>
+    <style>
+        :root {
+            --primary-color: #ffffff;
+            --bg-color: #0f0f11;
+            --card-bg: #1a1a1d;
+            --text-color: #f5f5f1;
+            --text-muted: #b3b3b3;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            min-height: 100vh;
+            padding: 0.5rem;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 0.5rem;
+        }
+
+        h1 {
+            font-size: 1.4rem;
+            font-weight: 800;
+            background: linear-gradient(90deg, #fff, #b3b3b3);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        p.subtitle {
+            color: var(--text-muted);
+            font-size: 0.8rem;
+        }
+
+        .videos-container {
+            display: flex;
+            flex-direction: column;
+            gap: 0.8rem;
+            width: 100%;
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+
+        .day-title {
+            width: 100%;
+            margin: 0.3rem 0 0.1rem 0;
+            font-size: 0.75rem;
+            color: var(--primary-color);
+            border-bottom: 1px solid #333;
+            padding-bottom: 0.1rem;
+            font-weight: 800;
+        }
+
+        .day-title:first-child {
+            margin-top: 0;
+        }
+
+        .videos-grid {
+            display: flex;
+            flex-direction: column;
+            gap: 0;
+            width: 100%;
+        }
+
+        .channel-badge {
+            font-size: 0.65rem;
+            color: var(--primary-color);
+            font-weight: 800;
+            text-transform: uppercase;
+            min-width: 130px;
+            flex-shrink: 0;
+        }
+
+        .video-card {
+            background-color: var(--card-bg);
+            border-radius: 0;
+            padding: 0.25rem 0.6rem;
+            border-left: 2px solid transparent;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+            transition: all 0.15s ease;
+            display: flex;
+            flex-direction: row;
+            align-items: center;
+            justify-content: space-between;
+            gap: 1rem;
+            width: 100%;
+        }
+
+        .video-card:hover {
+            border-left-color: var(--primary-color);
+            background-color: #252529;
+            transform: translateX(3px);
+        }
+
+        .video-title {
+            font-size: 0.85rem;
+            font-weight: 500;
+            line-height: 1.15;
+            flex: 1;
+            margin: 0;
+        }
+
+        .video-title a {
+            color: var(--text-color);
+            text-decoration: none;
+        }
+
+        .video-title a:hover {
+            color: var(--primary-color);
+        }
+
+        .video-date {
+            font-size: 0.55rem;
+            color: var(--text-muted);
+            white-space: nowrap;
+            flex-shrink: 0;
+            text-align: right;
+        }
+
+        .loader {
+            text-align: center;
+            padding: 1rem;
+        }
+
+        .spinner {
+            width: 20px;
+            height: 20px;
+            border: 2px solid rgba(255, 255, 255, 0.1);
+            border-radius: 50%;
+            border-top-color: var(--primary-color);
+            animation: spin 1s linear infinite;
+            display: inline-block;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        @media (max-width: 640px) {
+            .video-card {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 0.15rem;
+                padding: 0.35rem 0.5rem;
+            }
+
+            .channel-badge {
+                min-width: auto;
+            }
+
+            .video-date {
+                align-self: flex-end;
+            }
+        }
+    </style>
+    <!-- Use Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+</head>
+
+<body>
+
+    <header>
+        <h1>Monitor de Canales</h1>
+        <p class="subtitle">Videos de hoy, ayer y anteayer • Próxima actualización en <span id="countdown">30:00</span>
+        </p>
+    </header>
+
+    <main class="videos-container" id="videos-container">
+        <div class="loader" id="loader">
+            <div class="spinner"></div>
+        </div>
+    </main>
+
+
+
+    <script>
+        const channels = [
+            { name: 'KManuS88', id: 'UC0Ym7ckYtSsgcbZX1VvYMQQ' },
+            { name: 'Jose Luis Cava', id: 'UC6cpU68F1BiwwXoAC3sgcGQ' },
+            { name: 'CatalistClub', id: 'UCsjVKHgvE96znkziPmoj8vg' },
+            { name: 'Lo de Davi', id: 'UCcsVqisSYAss0VvAbj9aZZg' },
+            { name: 'CriptoNorber', id: 'UCNa-pOxhhp3hWfAGuTnWhCg' },
+            { name: 'Joven Inversor', id: 'UCnOWLhk15P-gUV7RdehAI2Q' },
+            { name: 'Healthy Pockets', id: 'UC7rmCjnXx6JNr_Rm4n37cFA' },
+            { name: 'Value Index', id: 'UCazZozymAFpyrVHiZreOJOA' },
+            { name: 'Jose Luis Cava TV', id: 'UCvCCLJkQpRg0NdT3zNcI08A' }
+        ];
+
+        document.addEventListener('DOMContentLoaded', () => {
+            if (navigator.onLine) {
+                fetchAllChannels();
+            }
+            startCountdown();
+        });
+
+        let timeLeft = 1800; // 30 minutos en segundos
+        function startCountdown() {
+            const countdownEl = document.getElementById('countdown');
+            const interval = setInterval(() => {
+                timeLeft--;
+                if (timeLeft <= 0) {
+                    clearInterval(interval);
+                    location.reload();
+                } else {
+                    const minutes = Math.floor(timeLeft / 60);
+                    const seconds = timeLeft % 60;
+                    if (countdownEl) {
+                        countdownEl.textContent = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+                    }
+                }
+            }, 1000);
+        }
+
+        async function fetchAllChannels() {
+            const container = document.getElementById('videos-container');
+
+            const now = new Date();
+            const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+            const daysAgo = new Date(today);
+            daysAgo.setDate(daysAgo.getDate() - 2);
+
+            let allVideos = [];
+
+            const fetchPromises = channels.map(async (channel) => {
+                try {
+                    // Añadimos un parámetro de tiempo para evitar que rss2json y el navegador cacheen los resultados viejos
+                    const timestamp = new Date().getTime();
+                    const rssUrl = `https://www.youtube.com/feeds/videos.xml?channel_id=${channel.id}&_t=${timestamp}`;
+                    const apiUrl = `https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(rssUrl)}`;
+
+                    // Usamos cache: 'no-store' para forzar al navegador a pedir los datos nuevos siempre
+                    const response = await fetch(apiUrl, { cache: 'no-store' });
+                    if (!response.ok) throw new Error(`Error al cargar canal ${channel.name}`);
+                    const data = await response.json();
+
+                    if (data.status === 'ok') {
+                        data.items.forEach(video => {
+                            // rss2json date format is "YYYY-MM-DD HH:MM:SS"
+                            const pubDate = new Date(video.pubDate.replace(' ', 'T'));
+                            const videoDay = new Date(pubDate.getFullYear(), pubDate.getMonth(), pubDate.getDate());
+                            if (videoDay.getTime() >= daysAgo.getTime()) {
+                                allVideos.push({
+                                    ...video,
+                                    channelName: channel.name,
+                                    parsedDate: pubDate
+                                });
+                            }
+                        });
+                    }
+                } catch (error) {
+                    console.error('Error fetching ' + channel.name + ':', error);
+                }
+            });
+
+            await Promise.all(fetchPromises);
+
+            container.innerHTML = ''; // Limpiar loader inicial
+
+            // Ordenar de más reciente a más antiguo
+            allVideos.sort((a, b) => b.parsedDate - a.parsedDate);
+
+            if (allVideos.length === 0) {
+                container.innerHTML = '<p style="text-align:center; color: var(--text-muted); grid-column: 1/-1;">No hay videos recientes.</p>';
+                return;
+            }
+
+            displayVideos(allVideos);
+        }
+
+        function displayVideos(videos) {
+            const container = document.getElementById('videos-container');
+
+            const now = new Date();
+            const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+            const yesterday = new Date(today);
+            yesterday.setDate(yesterday.getDate() - 1);
+            const daysAgo = new Date(today);
+            daysAgo.setDate(daysAgo.getDate() - 2);
+
+            const optionsTitle = { weekday: 'long', day: 'numeric', month: 'long' };
+            const capitalize = str => str.charAt(0).toUpperCase() + str.slice(1);
+
+            const nameToday = capitalize(today.toLocaleDateString('es-ES', optionsTitle));
+            const nameYesterday = capitalize(yesterday.toLocaleDateString('es-ES', optionsTitle));
+            const nameDaysAgo = capitalize(daysAgo.toLocaleDateString('es-ES', optionsTitle));
+
+            const groups = {
+                [nameToday]: [],
+                [nameYesterday]: [],
+                [nameDaysAgo]: []
+            };
+
+            videos.forEach(video => {
+                const videoDay = new Date(video.parsedDate.getFullYear(), video.parsedDate.getMonth(), video.parsedDate.getDate());
+                if (videoDay.getTime() === today.getTime()) {
+                    groups[nameToday].push(video);
+                } else if (videoDay.getTime() === yesterday.getTime()) {
+                    groups[nameYesterday].push(video);
+                } else if (videoDay.getTime() === daysAgo.getTime()) {
+                    groups[nameDaysAgo].push(video);
+                }
+            });
+
+            for (const [dayName, dayVideos] of Object.entries(groups)) {
+                if (dayVideos.length === 0) continue;
+
+                const sectionTitle = document.createElement('h2');
+                sectionTitle.className = 'day-title';
+                sectionTitle.textContent = dayName;
+                container.appendChild(sectionTitle);
+
+                const grid = document.createElement('div');
+                grid.className = 'videos-grid';
+
+                dayVideos.forEach((video) => {
+                    const options = { hour: '2-digit', minute: '2-digit' };
+                    const formattedTime = video.parsedDate.toLocaleTimeString('es-ES', options);
+
+                    const card = document.createElement('div');
+                    card.className = 'video-card';
+
+                    card.innerHTML = `
+                        <div class="channel-badge">${video.channelName}</div>
+                        <h3 class="video-title">
+                            <a href="${video.link}" target="_blank" rel="noopener noreferrer">
+                                ${video.title}
+                            </a>
+                        </h3>
+                        <div class="video-date">${formattedTime} hs</div>
+                    `;
+
+                    grid.appendChild(card);
+                });
+
+                container.appendChild(grid);
+            }
+        }
+    </script>
+</body>
+
+</html>
