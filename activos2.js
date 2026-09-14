@@ -6,5 +6,4 @@ XMR
 AVAX
 TAO
 MNT
-ARB
 `;
