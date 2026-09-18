@@ -37,40 +37,6 @@
 
     <script src="activos1.js"></script>
     <script>
-        // Mapeo de símbolos conocidos a sus IDs de CoinGecko
-        const SYMBOL_TO_COIN = {
-            'BTC': { id: 'bitcoin', symbol: 'BTC', name: 'Bitcoin' },
-            'ETH': { id: 'ethereum', symbol: 'ETH', name: 'Ethereum' },
-            'USDT': { id: 'tether', symbol: 'USDT', name: 'Tether' },
-            'BNB': { id: 'binancecoin', symbol: 'BNB', name: 'BNB' },
-            'XRP': { id: 'ripple', symbol: 'XRP', name: 'XRP' },
-            'SOL': { id: 'solana', symbol: 'SOL', name: 'Solana' },
-            'HYPE': { id: 'hyperliquid', symbol: 'HYPE', name: 'Hyperliquid' },
-            'ZEC': { id: 'zcash', symbol: 'ZEC', name: 'Zcash' },
-            'XMR': { id: 'monero', symbol: 'XMR', name: 'Monero' },
-            'SUI': { id: 'sui', symbol: 'SUI', name: 'Sui' },
-            'AVAX': { id: 'avalanche-2', symbol: 'AVAX', name: 'Avalanche' },
-            'TAO': { id: 'bittensor', symbol: 'TAO', name: 'Bittensor' },
-            'ONDO': { id: 'ondo-finance', symbol: 'ONDO', name: 'Ondo' },
-            'MNT': { id: 'mantle', symbol: 'MNT', name: 'Mantle' },
-            'AAVE': { id: 'aave', symbol: 'AAVE', name: 'Aave' },
-            'RENDER': { id: 'render-token', symbol: 'RENDER', name: 'Render' },
-            'KAS': { id: 'kaspa', symbol: 'KAS', name: 'Kaspa' },
-            'ARB': { id: 'arbitrum', symbol: 'ARB', name: 'Arbitrum' },
-            'NEXO': { id: 'nexo', symbol: 'NEXO', name: 'Nexo' },
-            'PUMP': { id: 'pump-fun', symbol: 'PUMP', name: 'Pump.fun' },
-            'AERO': { id: 'aerodrome-finance', symbol: 'AERO', name: 'Aerodrome Finance' },
-            'XPL': { id: 'plasma', symbol: 'XPL', name: 'Plasma' },
-            'AR': { id: 'arweave', symbol: 'AR', name: 'Arweave' },
-            'XPIN': { id: 'xpin-network', symbol: 'XPIN', name: 'XPIN Network' },
-            'RON': { id: 'ronin', symbol: 'RON', name: 'Ronin' },
-            'LINEA': { id: 'linea', symbol: 'LINEA', name: 'Linea' },
-            'MMT': { id: 'momentum-3', symbol: 'MMT', name: 'Momentum' },
-            'THE': { id: 'thena', symbol: 'THE', name: 'THENA' },
-            'FOXY': { id: 'foxy', symbol: 'FOXY', name: 'Foxy' },
-            'ASTER': { id: 'aster-2', symbol: 'ASTER', name: 'Aster' }
-        };
-
         // Función para acortar números grandes (ej: 1.5T, 20B)
         function formatLargeNum(num) {
             if (num === null || num === undefined) return "N/A";
@@ -105,10 +71,32 @@
             
             // Extraer líneas, ignorar vacías y comentarios (# o //)
             const symList = text.split(/\r?\n/)
-                .map(s => s.trim().toUpperCase())
+                .map(s => s.trim())
                 .filter(s => s.length > 0 && !s.startsWith('#') && !s.startsWith('//'));
 
-            return symList.map(sym => SYMBOL_TO_COIN[sym] || { id: sym.toLowerCase(), symbol: sym, name: sym });
+            return symList.map(item => {
+                const isContract = item.startsWith('0x') || item.startsWith('0X');
+                const keyUpper = item.toUpperCase();
+                const keyLower = item.toLowerCase();
+
+                // 1. Revisar si está en CONTRACTS_MAP de activos1.js
+                if (typeof CONTRACTS_MAP !== 'undefined' && CONTRACTS_MAP[keyLower]) {
+                    return CONTRACTS_MAP[keyLower];
+                }
+
+                // 2. Revisar si está en SYMBOL_TO_COIN de activos1.js
+                if (typeof SYMBOL_TO_COIN !== 'undefined') {
+                    if (SYMBOL_TO_COIN[keyUpper]) return SYMBOL_TO_COIN[keyUpper];
+                    if (SYMBOL_TO_COIN[keyLower]) return SYMBOL_TO_COIN[keyLower];
+                }
+
+                // 3. Fallback genérico
+                return {
+                    id: keyLower,
+                    symbol: isContract ? item.slice(0, 6) + '...' + item.slice(-4) : keyUpper,
+                    name: isContract ? 'Token (' + item.slice(0, 6) + '...)' : keyUpper
+                };
+            });
         }
 
         async function fetchWatchlist() {
