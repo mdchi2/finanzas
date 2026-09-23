@@ -6,4 +6,6 @@ XMR
 AVAX
 TAO
 MNT
+SKY
+GRVT
 `;

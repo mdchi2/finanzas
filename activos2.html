@@ -18,14 +18,23 @@
             margin: 0;
             overflow-x: auto;
         }
-        .pos { color: #00ff88; font-weight: bold; }
-        .neg { color: #ff4444; font-weight: bold; }
+
+        .pos {
+            color: #00ff88;
+            font-weight: bold;
+        }
+
+        .neg {
+            color: #ff4444;
+            font-weight: bold;
+        }
+
         #monitor {
             background: #111;
             padding: 20px;
             border-radius: 8px;
             border: 1px solid #333;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
             display: inline-block;
             min-width: fit-content;
         }
@@ -71,6 +80,16 @@
             'ASTER': { id: 'aster-2', symbol: 'ASTER', name: 'Aster' }
         };
 
+        // Mapeo opcional de contratos a sus datos (id de CoinGecko o plataforma/red):
+        const CONTRACTS_MAP = {
+            '0x2e8c31162b855a2ffa90f6f8634643ad6f111e18': {
+                id: 'artificial-inu-3',
+                symbol: 'AI',
+                name: 'Artificial Inu',
+                platform: 'robinhood'
+            }
+        };
+
         // Función para acortar números grandes (ej: 1.5T, 20B)
         function formatLargeNum(num) {
             if (num === null || num === undefined) return "N/A";
@@ -85,8 +104,8 @@
         async function loadSymbols() {
             let text = "";
             try {
-                // Intenta leer activos2.txt (si existe en servidores web / Live Server)
-                const txtRes = await fetch('activos2.txt?t=' + Date.now());
+                // Intenta leer activos1.txt (si existe en servidores web / Live Server)
+                const txtRes = await fetch('activos1.txt?t=' + Date.now());
                 if (txtRes.ok) {
                     text = await txtRes.text();
                 }
@@ -100,15 +119,37 @@
             }
 
             if (!text) {
-                throw new Error("No se pudo cargar la lista de símbolos (activos2.js).");
+                throw new Error("No se pudo cargar la lista de símbolos (activos1.js).");
             }
-            
+
             // Extraer líneas, ignorar vacías y comentarios (# o //)
             const symList = text.split(/\r?\n/)
-                .map(s => s.trim().toUpperCase())
+                .map(s => s.trim())
                 .filter(s => s.length > 0 && !s.startsWith('#') && !s.startsWith('//'));
 
-            return symList.map(sym => SYMBOL_TO_COIN[sym] || { id: sym.toLowerCase(), symbol: sym, name: sym });
+            return symList.map(item => {
+                const isContract = item.startsWith('0x') || item.startsWith('0X');
+                const keyUpper = item.toUpperCase();
+                const keyLower = item.toLowerCase();
+
+                // 1. Revisar si está en CONTRACTS_MAP
+                if (typeof CONTRACTS_MAP !== 'undefined' && CONTRACTS_MAP[keyLower]) {
+                    return CONTRACTS_MAP[keyLower];
+                }
+
+                // 2. Revisar si está en SYMBOL_TO_COIN
+                if (typeof SYMBOL_TO_COIN !== 'undefined') {
+                    if (SYMBOL_TO_COIN[keyUpper]) return SYMBOL_TO_COIN[keyUpper];
+                    if (SYMBOL_TO_COIN[keyLower]) return SYMBOL_TO_COIN[keyLower];
+                }
+
+                // 3. Fallback genérico
+                return {
+                    id: keyLower,
+                    symbol: isContract ? item.slice(0, 6) + '...' + item.slice(-4) : keyUpper,
+                    name: isContract ? 'Token (' + item.slice(0, 6) + '...)' : keyUpper
+                };
+            });
         }
 
         async function fetchWatchlist() {
@@ -117,7 +158,7 @@
                 const ids = coins.map(c => c.id).join(',');
                 // Usar endpoint 'markets' para obtener supply, vol y porcentajes extra
                 const res = await fetch(`https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&ids=${ids}&price_change_percentage=1h,24h,7d`);
-                
+
                 if (!res.ok) {
                     if (res.status === 429) {
                         throw new Error("Límite de peticiones de CoinGecko alcanzado (Rate Limit 429). Espera un minuto.");
