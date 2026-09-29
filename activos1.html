@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta http-equiv="refresh" content="300">
+    <meta http-equiv="refresh" content="1800">
     <title>Watchlist Dinámica - Texto Plano</title>
     <style>
         body {
@@ -70,8 +70,11 @@
             'FOXY': { id: 'foxy', symbol: 'FOXY', name: 'Foxy' },
             'ASTER': { id: 'aster-2', symbol: 'ASTER', name: 'Aster' },
             'STONK': { id: 'stonk-3', symbol: 'STONK', name: 'STONK' },
-            'STORK': { id: 'stonk-3', symbol: 'STONK', name: 'STONK' }
+            'STORK': { id: 'stonk-3', symbol: 'STONK', name: 'STONK' },
+            'LIGHTER': { id: 'lighter', symbol: 'LIT', name: 'Lighter' }
         };
+
+        const COINGECKO_API_KEY = 'CG-jSiiTYtuqXqQkCMgSkJj2hwy';
 
         // Mapeo opcional de contratos a sus datos (id de CoinGecko o plataforma/red):
         const CONTRACTS_MAP = {
@@ -161,12 +164,20 @@
             try {
                 const coins = await loadSymbols();
                 const ids = coins.map(c => c.id).join(',');
-                // Usar endpoint 'markets' para obtener supply, vol y porcentajes extra
-                const res = await fetch(`https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&ids=${ids}&price_change_percentage=1h,24h,7d`);
+                // Usar endpoint 'markets' para obtener supply, vol y porcentajes extra con la API Key
+                const url = `https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&ids=${ids}&price_change_percentage=1h,24h,7d&x_cg_demo_api_key=${COINGECKO_API_KEY}`;
+                const res = await fetch(url, {
+                    headers: {
+                        'x-cg-demo-api-key': COINGECKO_API_KEY
+                    }
+                });
                 
                 if (!res.ok) {
                     if (res.status === 429) {
                         throw new Error("Límite de peticiones de CoinGecko alcanzado (Rate Limit 429). Espera un minuto.");
+                    }
+                    if (res.status === 403) {
+                        throw new Error("Acceso denegado (403 Forbidden). Verifica la API key de CoinGecko.");
                     }
                     throw new Error(`Error en API CoinGecko: HTTP ${res.status}`);
                 }
@@ -249,7 +260,7 @@
                 console.error(e);
             }
         }
-        let timeLeft = 300; // 5 minutos en segundos
+        let timeLeft = 1800; // 30 minutos en segundos
 
         function formatTime(seconds) {
             const mins = Math.floor(seconds / 60);
