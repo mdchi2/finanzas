@@ -8,5 +8,4 @@ TAO
 MNT
 SKY
 COINDEPO
-GRVT
 `;
