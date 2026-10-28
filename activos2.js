@@ -31,4 +31,5 @@ XPIN
 GRVT
 THE
 FOXY
+NEXO
 `;

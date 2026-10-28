@@ -6,5 +6,4 @@ ETH
 USDT
 XRP
 HYPE
-NEXO
 `;
