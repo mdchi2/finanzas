@@ -4,6 +4,4 @@ const SYMBOLS_LIST = `
 BTC
 ETH
 USDT
-XRP
-HYPE
 `;
